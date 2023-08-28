@@ -9,26 +9,26 @@ import java.util.concurrent.Semaphore;
  * nor to implement it yourself. Instead, to read from
  * the emulated hardware, do as follows:
  * 
- *   AlarmClockEmulator emulator = new AlarmClockEmulator();
- *   ClockInput in = emulator.getInput();
+ * AlarmClockEmulator emulator = new AlarmClockEmulator();
+ * ClockInput in = emulator.getInput();
  *
  * Then use the reference 'in' to read the input signals.
  */
 public interface ClockInput {
 
-    /** @return  semaphore signaled on user input (via hardware interrupt) */
+    /** @return semaphore signaled on user input (via hardware interrupt) */
     Semaphore getSemaphore();
 
-    /** @return  an item of user input (available only when semaphore is signaled) */
+    /** @return an item of user input (available only when semaphore is signaled) */
     UserInput getUserInput();
 
     // -----------------------------------------------------------------------
-    
+
     /** An item of input, entered by the user. */
     interface UserInput {
-        /** @return  a value indicating the type of choice made by the user. */
+        /** @return a value indicating the type of choice made by the user. */
         Choice choice();
-    
+
         /**
          * These methods return a time set by the user (clock time or alarm time).
          * 
@@ -37,7 +37,9 @@ public interface ClockInput {
          * If choice() returns TOGGLE_ALARM, these return an invalid value.
          */
         int hours();
+
         int minutes();
+
         int seconds();
     }
 }
