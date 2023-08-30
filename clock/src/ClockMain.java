@@ -17,9 +17,9 @@ public class ClockMain {
 
         // out.displayTime(15, 2, 37); // arbitrary time: just an example
 
-        Monitor monitor = new Monitor(15, 0, 0);
+        Monitor monitor = new Monitor(15, 0, 0, out);
 
-        Thread timeIncrementer = new RealTimeIncrementor(out, monitor);
+        Thread timeIncrementer = new RealTimeIncrementor(monitor);
         timeIncrementer.start();
         while (true) {
             mutex.acquire();
@@ -43,9 +43,10 @@ public class ClockMain {
                 case SET_TIME:
                     monitor.setTime(h, m, s);
                     break;
+                case TOGGLE_ALARM:
+                    out.setAlarmIndicator(monitor.alarmOn);
+                    break;
 
-            }
-            if (c == Choice.SET_TIME) {
             }
             System.out.println("choice=" + c + " h=" + h + " m=" + m + " s=" + s);
         }
@@ -56,11 +57,13 @@ class Monitor {
     private int[] time = { 0, 0, 0 };
     private int[] alarm = { 0, 0, 0 };
     public boolean alarmOn = false;
+    private ClockOutput out;
 
-    Monitor(int hours, int minutes, int seconds) {
+    Monitor(int hours, int minutes, int seconds, ClockOutput out) {
         this.time[0] = hours;
         this.time[1] = minutes;
         this.time[2] = seconds;
+        this.out = out;
     }
 
     public int[] getTime() {
@@ -81,6 +84,7 @@ class Monitor {
                 }
             }
         }
+        out.displayTime(time[0], time[1], time[2]);
     }
 
     public void setTime(int hours, int minutes, int seconds) {
@@ -94,21 +98,25 @@ class Monitor {
 
     }
 
-    public boolean shouldAlarm() {
+    private boolean shouldAlarm() {
         int timeInSeconds = (time[0] == 0 ? 23 : time[0]) * 24 * 60 + (time[1] == 0 ? 60 : time[1]) * 60 + time[2];
         int alarmInSeconds = alarm[0] * 24 * 60 + alarm[1] * 60 + alarm[2];
         int diff = timeInSeconds - alarmInSeconds;
         return diff <= 20 && diff >= 0;
     }
+
+    public void alarm() {
+        if (this.alarmOn && this.shouldAlarm()) {
+            out.alarm();
+        }
+    }
 }
 
 class RealTimeIncrementor extends Thread {
 
-    private ClockOutput out;
     private Monitor monitor;
 
-    RealTimeIncrementor(ClockOutput out, Monitor monitor) {
-        this.out = out;
+    RealTimeIncrementor(Monitor monitor) {
         this.monitor = monitor;
     }
 
@@ -117,14 +125,9 @@ class RealTimeIncrementor extends Thread {
         long target = t0 + 1000;
         while (true) {
             try {
-                long now = System.currentTimeMillis();
-                int[] time = monitor.getTime();
                 monitor.increment();
-                out.displayTime(time[0], time[1], time[2]);
-                if (monitor.alarmOn && monitor.shouldAlarm()) {
-                    out.alarm();
-                }
-
+                monitor.alarm();
+                long now = System.currentTimeMillis();
                 Thread.sleep(target - now);
                 target += 1000;
             } catch (InterruptedException e) {
