@@ -13,7 +13,7 @@ public class ClockMain {
         ClockInput in = emulator.getInput();
         ClockOutput out = emulator.getOutput();
 
-        Semaphore mutex = in.getSemaphore();
+        Semaphore mutexInput = in.getSemaphore();
 
         // out.displayTime(15, 2, 37); // arbitrary time: just an example
 
@@ -22,7 +22,7 @@ public class ClockMain {
         Thread timeIncrementer = new RealTimeIncrementor(monitor);
         timeIncrementer.start();
         while (true) {
-            mutex.acquire();
+            mutexInput.acquire();
             UserInput userInput = in.getUserInput();
             Choice c = userInput.choice();
             int h = userInput.hours();
@@ -30,21 +30,14 @@ public class ClockMain {
             int s = userInput.seconds();
             switch (c) {
                 case SET_ALARM:
-                    if (monitor.alarmOn) {
-                        monitor.alarmOn = false;
-                        monitor.setAlarm(0, 0, 0);
-                        out.setAlarmIndicator(false);
-                    } else {
-                        monitor.alarmOn = true;
-                        monitor.setAlarm(h, m, s);
-                        out.setAlarmIndicator(true);
-                    }
+                    monitor.setAlarm(h, m, s);
+                    out.setAlarmIndicator(true);
                     break;
                 case SET_TIME:
                     monitor.setTime(h, m, s);
                     break;
                 case TOGGLE_ALARM:
-                    out.setAlarmIndicator(monitor.alarmOn);
+                    out.setAlarmIndicator(monitor.alarmSwitch());
                     break;
 
             }
@@ -54,61 +47,84 @@ public class ClockMain {
 }
 
 class Monitor {
-    private int[] time = { 0, 0, 0 };
-    private int[] alarm = { 0, 0, 0 };
-    public boolean alarmOn = false;
+    private int timeHours;
+    private int timeMinutes;
+    private int timeSeconds;
+
+    private int alarmHours;
+    private int alarmMinutes;
+    private int alarmSeconds;
+
+    private boolean alarmOn = false;
     private ClockOutput out;
 
+    private Semaphore mutex = new Semaphore(1);
+
     Monitor(int hours, int minutes, int seconds, ClockOutput out) {
-        this.time[0] = hours;
-        this.time[1] = minutes;
-        this.time[2] = seconds;
+        timeHours = hours;
+        timeMinutes = minutes;
+        timeSeconds = seconds;
         this.out = out;
     }
 
-    public int[] getTime() {
-        // int[] time = {hours, minutes, seconds };
-        return time;
-    }
-
-    public void increment() {
-        time[2]++;
-        if (time[2] > 59) {
-            time[2] = 0;
-            time[1]++;
-            if (time[1] > 59) {
-                time[1] = 0;
-                time[0]++;
-                if (time[0] > 23) {
-                    time[0] = 0;
+    public void increment() throws InterruptedException {
+        mutex.acquire();
+        timeSeconds++;
+        if (timeSeconds > 59) {
+            timeSeconds = 0;
+            timeMinutes++;
+            if (timeMinutes > 59) {
+                timeMinutes = 0;
+                timeHours++;
+                if (timeHours > 23) {
+                    timeHours = 0;
                 }
             }
         }
-        out.displayTime(time[0], time[1], time[2]);
+        out.displayTime(timeHours, timeMinutes, timeSeconds);
+        mutex.release();
     }
 
-    public void setTime(int hours, int minutes, int seconds) {
-        int[] time = { hours, minutes, seconds };
-        this.time = time;
+    public void setTime(int hours, int minutes, int seconds) throws InterruptedException {
+        mutex.acquire();
+
+        timeHours = hours;
+        timeMinutes = minutes;
+        timeSeconds = seconds;
+        mutex.release();
     }
 
-    public void setAlarm(int hours, int minutes, int seconds) {
-        int[] alarm = { hours, minutes, seconds };
-        this.alarm = alarm;
+    public void setAlarm(int hours, int minutes, int seconds) throws InterruptedException {
+        mutex.acquire();
+        alarmHours = hours;
+        alarmMinutes = minutes;
+        alarmSeconds = seconds;
+        alarmOn = true;
+        mutex.release();
+    }
+
+    public boolean alarmSwitch() throws InterruptedException {
+        mutex.acquire();
+        this.alarmOn = !this.alarmOn;
+        mutex.release();
+        return this.alarmOn;
 
     }
 
     private boolean shouldAlarm() {
-        int timeInSeconds = (time[0] == 0 ? 23 : time[0]) * 24 * 60 + (time[1] == 0 ? 60 : time[1]) * 60 + time[2];
-        int alarmInSeconds = alarm[0] * 24 * 60 + alarm[1] * 60 + alarm[2];
+        int timeInSeconds = (timeHours == 0 ? 23 : timeHours) * 24 * 60
+                + (timeMinutes == 0 && alarmMinutes != 0 ? 60 : timeMinutes) * 60 + timeSeconds;
+        int alarmInSeconds = alarmHours * 24 * 60 + alarmMinutes * 60 + alarmSeconds;
         int diff = timeInSeconds - alarmInSeconds;
-        return diff <= 20 && diff >= 0;
+        return diff <= 20 && diff >= 0 && alarmOn;
     }
 
-    public void alarm() {
-        if (this.alarmOn && this.shouldAlarm()) {
+    public void alarm() throws InterruptedException {
+        mutex.acquire();
+        if (this.shouldAlarm()) {
             out.alarm();
         }
+        mutex.release();
     }
 }
 
@@ -120,16 +136,18 @@ class RealTimeIncrementor extends Thread {
         this.monitor = monitor;
     }
 
+    @Override
     public void run() {
         long t0 = System.currentTimeMillis();
-        long target = t0 + 1000;
+        long target = t0 + 1000; // 1000ms
         while (true) {
             try {
-                monitor.increment();
+                monitor.increment(); // 400ms
                 monitor.alarm();
-                long now = System.currentTimeMillis();
-                Thread.sleep(target - now);
-                target += 1000;
+
+                long now = System.currentTimeMillis(); // 400ms
+                Thread.sleep(target - now); // 1000-400;
+                target += 1000; // 2000ms
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
