@@ -2,7 +2,6 @@ package factory.simulation;
 
 import factory.model.Conveyor;
 import factory.model.Tool;
-import factory.model.Widget;
 
 public class FactoryController {
 

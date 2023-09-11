@@ -19,7 +19,9 @@ public class ClockMain {
 
         Monitor monitor = new Monitor(15, 0, 0, out);
 
-        Thread timeIncrementer = new RealTimeIncrementor(monitor);
+        // Thread timeIncrementer = new RealTimeIncrementor(monitor); //Using Thread
+        Thread timeIncrementer = new Thread(() -> incrementTime(monitor)); // Using lambda
+
         timeIncrementer.start();
         while (true) {
             mutexInput.acquire();
@@ -42,6 +44,23 @@ public class ClockMain {
 
             }
             System.out.println("choice=" + c + " h=" + h + " m=" + m + " s=" + s);
+        }
+    }
+
+    private static void incrementTime(Monitor monitor) {
+        long t0 = System.currentTimeMillis();
+        long target = t0 + 1000; // 1000ms
+        while (true) {
+            try {
+                monitor.increment(); // 400ms
+                monitor.alarm();
+
+                long now = System.currentTimeMillis(); // 400ms
+                Thread.sleep(target - now); // 1000-400;
+                target += 1000; // 2000ms
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
@@ -126,31 +145,32 @@ class Monitor {
         }
         mutex.release();
     }
+
 }
 
-class RealTimeIncrementor extends Thread {
+// class RealTimeIncrementor extends Thread {
 
-    private Monitor monitor;
+// private Monitor monitor;
 
-    RealTimeIncrementor(Monitor monitor) {
-        this.monitor = monitor;
-    }
+// RealTimeIncrementor(Monitor monitor) {
+// this.monitor = monitor;
+// }
 
-    @Override
-    public void run() {
-        long t0 = System.currentTimeMillis();
-        long target = t0 + 1000; // 1000ms
-        while (true) {
-            try {
-                monitor.increment(); // 400ms
-                monitor.alarm();
+// @Override
+// public void run() {
+// long t0 = System.currentTimeMillis();
+// long target = t0 + 1000; // 1000ms
+// while (true) {
+// try {
+// monitor.increment(); // 400ms
+// monitor.alarm();
 
-                long now = System.currentTimeMillis(); // 400ms
-                Thread.sleep(target - now); // 1000-400;
-                target += 1000; // 2000ms
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-}
+// long now = System.currentTimeMillis(); // 400ms
+// Thread.sleep(target - now); // 1000-400;
+// target += 1000; // 2000ms
+// } catch (InterruptedException e) {
+// e.printStackTrace();
+// }
+// }
+// }
+// }

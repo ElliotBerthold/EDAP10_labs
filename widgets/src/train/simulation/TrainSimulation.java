@@ -5,7 +5,7 @@ import train.view.TrainView;
 public class TrainSimulation {
 
     public static void main(String[] args) throws InterruptedException {
-        final int TRAIN_SIZE = 3;
+        final int TRAIN_SIZE = 4;
         final int NUMBER_OF_ROUTES = 20;
 
         TrainMonitor monitor = new TrainMonitor();
