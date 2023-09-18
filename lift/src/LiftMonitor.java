@@ -61,7 +61,6 @@ public class LiftMonitor {
             passengersInLift.remove(passenger);
             view.closeDoors();
             doorsAreMoving = false;
-            passenger.end();
         }
         notifyAll();
 
