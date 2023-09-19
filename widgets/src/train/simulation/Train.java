@@ -40,9 +40,9 @@ public class Train extends Thread {
         while (true) {
             Segment part = route.next();
             try {
-                monitor.occupieSegment(part);
-                part.enter();
-                Segment released = train.poll();
+                monitor.occupieSegment(part); // Try to do action but puts i wait if you cant
+                part.enter(); // Do the action
+                Segment released = train.poll(); // Update the monitor that the action is preformend
                 released.exit();
                 monitor.releaseSegment(released);
                 train.add(part);

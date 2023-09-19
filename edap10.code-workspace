@@ -41,6 +41,7 @@
 			".project": true,
 			".settings": true,
 			".classpath": true
-		}
+		},
+		"java.debug.settings.onBuildFailureProceed": true
 	}
 }
