@@ -18,6 +18,7 @@ public class LiftMonitor {
                                                //
     private boolean liftIsMoving = false;
     private boolean doorsAreOpen = false;
+    private boolean doorsAreMoving = false;
     private int currentFloor;
 
     private int previosFloor;
@@ -43,7 +44,8 @@ public class LiftMonitor {
     public synchronized int tryToGetNextFloor() throws InterruptedException { // Get the floor, if doors are open or
                                                                               // noone is waiting on lift, the
                                                                               // put in wait
-        while ((IntStream.of(toEnter).sum() == 0 || toExit[currentFloor] > 0) && doorsAreOpen) {// Accumulativ summering
+        while ((IntStream.of(toEnter).sum() == 0 || toExit[currentFloor] > 0) && (doorsAreMoving || doorsAreOpen)) {// Accumulativ
+                                                                                                                    // summering
             wait();
         }
         liftIsMoving = true;
@@ -66,14 +68,6 @@ public class LiftMonitor {
                 // }
             }
         }
-
-        // ---6 [4,5] <- först in
-        // ---5 [] => 5
-        // ---4 [5] => 4
-        // ---3
-        // ---2
-        // ---1
-        // ---0
 
         // i detta scenario nextFloor 4 sen 5,
 
@@ -131,22 +125,17 @@ public class LiftMonitor {
         return currentFloor;
     }
 
-    private void openDoorsAtCurrentFloor() {
-        if (!doorsAreOpen) {
-            view.openDoors(currentFloor);
-            doorsAreOpen = true;
-        }
-    }
-
-    public synchronized void openDoors() throws InterruptedException {
+    private void openDoorsAtCurrentFloor() throws InterruptedException {
         while (liftIsMoving) {
             wait();
         }
+
         if (!doorsAreOpen) {
+            doorsAreMoving = true;
             view.openDoors(currentFloor);
             doorsAreOpen = true;
+            notifyAll();
         }
-        notifyAll();
     }
 
     public synchronized void closeDoors() throws InterruptedException {
@@ -155,10 +144,11 @@ public class LiftMonitor {
             wait();
         }
         if (doorsAreOpen) {
-            view.closeDoors();
+            doorsAreMoving = false;
             doorsAreOpen = false;
+            view.closeDoors();
+            notifyAll();
         }
-        notifyAll();
     }
 }
 

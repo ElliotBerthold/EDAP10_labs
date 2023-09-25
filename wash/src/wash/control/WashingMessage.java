@@ -29,22 +29,22 @@ public class WashingMessage {
     private final Order order;
 
     /**
-     * @param sender   the thread that sent the message
-     * @param order    an order, such as SPIN_FAST or WATER_DRAIN
+     * @param sender the thread that sent the message
+     * @param order  an order, such as SPIN_FAST or WATER_DRAIN
      */
     public WashingMessage(ActorThread<WashingMessage> sender, Order order) {
         this.sender = sender;
         this.order = order;
     }
-    
+
     public ActorThread<WashingMessage> sender() {
         return sender;
     }
-    
+
     public Order order() {
         return order;
     }
-    
+
     public String toString() {
         return new StringBuilder(order.toString())
                 .append(" from ")

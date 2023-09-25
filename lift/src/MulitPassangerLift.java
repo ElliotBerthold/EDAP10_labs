@@ -1,7 +1,7 @@
 import lift.LiftView;
 
 public class MulitPassangerLift {
-    public static int NBR_FLOORS = 10, MAX_PASSENGERS = 6, NBR_OF_PASSANGERS = 20;
+    public static int NBR_FLOORS = 7, MAX_PASSENGERS = 4, NBR_OF_PASSANGERS = 20;
 
     public static void main(String[] args) {
 
