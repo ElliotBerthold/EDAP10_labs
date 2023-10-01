@@ -3,6 +3,7 @@ package wash.control;
 import actor.ActorThread;
 import wash.io.WashingIO;
 import wash.simulation.WashingSimulator;
+import static wash.control.WashingMessage.Order.*;
 
 public class Wash {
 
@@ -25,18 +26,22 @@ public class Wash {
             ActorThread<WashingMessage> selectedProgram;
             switch (n) {
                 case 0:
-                    System.out.println("STOP");
-                    selectedProgram = new WashingProgram3(io, temp, water, spin);
+                    System.out.println("STOP selected");
+                    temp.send(new WashingMessage(new ActorThread<>(), TEMP_IDLE));
+                    water.send(new WashingMessage(new ActorThread<>(), WATER_IDLE));
+                    spin.send(new WashingMessage(new ActorThread<>(), SPIN_OFF));
+                    selectedProgram = new ActorThread<>();
                     break;
                 case 1:
-                    System.out.println("PROGRAM 1");
-                    selectedProgram = new WashingProgram3(io, temp, water, spin);
+                    System.out.println("PROGRAM 1 selected");
+                    selectedProgram = new WashingProgram1(io, temp, water, spin);
                     break;
                 case 2:
-                    System.out.println("PROGRAM 2");
-                    selectedProgram = new WashingProgram3(io, temp, water, spin);
+                    System.out.println("PROGRAM 2 selected");
+                    selectedProgram = new WashingProgram2(io, temp, water, spin);
                     break;
                 case 3:
+                    System.out.println("PROGRAM 3 selected");
                     selectedProgram = new WashingProgram3(io, temp, water, spin);
                     break;
                 default:
@@ -44,6 +49,7 @@ public class Wash {
                     break;
             }
             selectedProgram.start();
+
             // TODO:
             // if the user presses buttons 1-3, start a washing program
             // if the user presses button 0, and a program has been started, stop it

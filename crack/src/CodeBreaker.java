@@ -129,12 +129,12 @@ public class CodeBreaker implements SnifferCallback {
 
         try {
             mainProgressBar.setMaximum(mainProgressBar.getMaximum() + 1000000);
-            Future<?> task = (Future<?>) pool.submit(crackTask(removeButton, cancelButton, progressItem, n));
+            Future<?> task = pool.submit(crackTask(removeButton, cancelButton, progressItem, n));
             cancelButton.addActionListener(e2 -> {
                 task.cancel(true);
-                progressItem.getTextArea().setText("[CANCELLED]");
                 int currentProgress = progressItem.getProgressBar().getValue();
                 SwingUtilities.invokeLater(() -> {
+                    progressItem.getTextArea().setText("[CANCELLED]");
                     progressItem.getProgressBar().setValue(1000000);
                     cancelButton.setVisible(false);
                     removeButton.setVisible(true);
