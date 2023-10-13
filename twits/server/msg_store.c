@@ -29,7 +29,6 @@ static bool
 any_topic_available(struct msg_store *store,
                     struct client_state *client)
 {
-  pthread_cond_broadcast(&store->cond);
   return (list_size(client->message_counts) < list_size(store->topics));
 }
 
@@ -40,7 +39,6 @@ static bool
 any_message_available(struct msg_store *store,
                       struct client_state *client)
 {
-  pthread_cond_broadcast(&store->cond);
   for (int i = 0; i < list_size(client->message_counts); i++) {
     struct list *messages_in_topic = list_get(store->topics, i);
     if (list_size(messages_in_topic) > list_get_int(client->message_counts, i)) {
@@ -259,4 +257,5 @@ msg_store_select_topic(struct msg_store *store,
   }
   client->nbr_read = 0;
   pthread_mutex_unlock(&store->mutex);
+  pthread_cond_broadcast(&store->cond);
 }
